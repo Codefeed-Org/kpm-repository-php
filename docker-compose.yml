@@ -1,0 +1,42 @@
+version: '3'
+services:
+  httpd:
+    image: nginx:alpine
+    ports:
+    - "18080:80"
+    links:
+    - php
+    volumes:
+    - ./docker/nginx:/etc/nginx/conf.d/
+    - ./code:/webserver/www
+  php:
+    build: 
+      context: ./docker/php/
+      dockerfile: Dockerfile
+    environment:
+      XDEBUG_CONFIG: remote_host=host.docker.internal remote_port=9000 remote_enable=1
+      REGISTRY_DIR: /webserver/registry/
+    volumes:
+    - ./code:/webserver/www
+    - ./registry:/webserver/registry
+    links:
+    - kpm_db
+  kpm_db:
+    image: postgres:12.1
+    environment:
+      POSTGRES_USER: "admin"
+      POSTGRES_PASSWORD: "admin"
+      POSTGRES_DB: "kpm"
+    volumes:
+    - kdb:/var/lib/postgresql/data
+    - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+    - "5432:5432"
+
+volumes:
+  kdb:
+
+networks:
+  default:
+    external:
+      name: kpm_repository
